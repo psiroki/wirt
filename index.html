@@ -28,6 +28,10 @@
 	
 	body {
 		display: flex; align-items: center; justify-content: center;
+		flex-direction: column;
+	}
+	div.spacer {
+		flex-grow: 1; position: relative; width: 100%;
 	}
 	body::after {
 		content: '';
@@ -54,7 +58,7 @@
 	input[type=file] { box-shadow: 0px 2px 3px 1px #0002; border-radius: 3px; background-color: #fefefe; }
 	ul.resize { list-style: none; padding: 0 0 0 16px; text-align: left; }
 	ul.resize > li { position: relative; z-index: 0; }
-	, ul.resize > li input[type=radio], ul.resize > li input[type=checkbox] { position: absolute; left: -16px; top: 4px; }
+	ul.resize > li input[type=radio], ul.resize > li input[type=checkbox] { position: absolute; left: -16px; top: 4px; }
 	.fieldName { display: inline-block; width: 192px; margin-left: 8px; text-align: left; }
 	input[type=range] {
 		width: calc(100vw - 332px);
@@ -96,51 +100,37 @@
 		position: absolute; left: 0; top: 0; max-width: 100vw; max-height: 100vh;
 		box-shadow: 0px 7px 32px rgba(0,0,0,0.5);
 	}
-	.controls::after, .controls::before {
+	body > .spacer:first-of-type::after, body > .spacer:first-of-type::before {
 		display: block;
 		position: absolute;
-		top: 0;
+		top: 50%;
 		left: 0;
 		right: 0;
 		height: 28.125vw;
-		margin-top: -22vw;
+		margin-top: -14.0625vw;
 		pointer-events: none;
 		z-index: -1;
 		transition: opacity 0.5s ease-in-out;
 		opacity: 1;
 	}
-	.controls::after {
+	body > .spacer:first-of-type::after {
 		content: 'wirt';
 		font-family: 'Lucida Grande', Tahoma, sans-serif;
 		font-size: 7vw;
-		line-height: 24vw;
+		line-height: 28.125vw;
 		color: white;
 		text-shadow: 0 0 7px black, 0 0 7px black, 0 0 3px black, 0 0 3px black, 0 3px 3px black;
+		text-align: center;
 	}
-	.controls::before {
+	body > .spacer:first-of-type::before {
 		content: '';
 		background: url(solo_jazz_lo.png) 50% 0 / auto 28.125vw no-repeat;
 		opacity: 0.5;
 	}
 	@media screen and (max-height: 50vw) {
-		.controls::before, .controls::after {
-			height: 56.25vh;
-			margin-top: calc(-88vh + 22vw);
-		}
-	}
-	@media screen and (max-height: 50vw) {
-		.controls::before {
-			background-size: auto 56.25vh;
-			opacity: 0.25;
-		}
-		.controls::after {
+		body > .spacer:first-of-type::after {
 			font-size: 14vh;
-			line-height: 48vh;
-		}
-	}
-	@media screen and (max-height: 38vw) {
-		.controls::before, .controls::after {
-			opacity: 0;
+			line-height: 56.25vh;
 		}
 	}
 
@@ -162,6 +152,7 @@
 <meta property="og:image:type" content="image/jpeg"/>
 </head>
 <body class="loading bitmapSupportUnknown">
+<div class="spacer"></div>
 <div class="controls"><ul class="resize">
 	<li><label><input type="radio" name="resize" value="yield"/><span class="fieldName">Yield: </span><input
 		id="yieldField" type="number" min="0.25" max="25" step="0.25" value="3"/>x</label>
@@ -197,5 +188,6 @@
 <script type="application/javascript" defer="defer" src="drop.js"></script>
 <script type="application/javascript" defer="defer" src="crc32.js"></script>
 <script type="application/javascript" defer="defer" src="imageBoom.js"></script>
+<div class="spacer"></div>
 </body>
 </html>
