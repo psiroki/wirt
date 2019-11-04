@@ -133,6 +133,11 @@
 			line-height: 56.25vh;
 		}
 	}
+	@media screen and (max-height: 36vw) {
+		body > .spacer:first-of-type::before, body > .spacer:first-of-type::after {
+			opacity: 0;
+		}
+	}
 
 	body.bitmapSupportUnknown .svgOnly, body.bitmapSupportUnknown .bitmapSupport,
 	body.svgOnly .bitmapSupport, body.bitmapSupport .svgOnly {
