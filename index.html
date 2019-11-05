@@ -128,9 +128,9 @@
 		opacity: 0.5;
 	}
 	@media screen and (max-height: 50vw) {
-		body > .spacer:first-of-type::after {
+		body > .spacer:first-of-type::before, body > .spacer:first-of-type::after {
 			font-size: 14vh;
-			line-height: 56.25vh;
+			margin-top: calc(-10.0625vw - 8vh);
 		}
 	}
 	@media screen and (max-height: 36vw) {
