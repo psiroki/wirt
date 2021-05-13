@@ -60,6 +60,7 @@
 	ul.resize > li { position: relative; z-index: 0; }
 	ul.resize > li input[type=radio], ul.resize > li input[type=checkbox] { position: absolute; left: -16px; top: 4px; }
 	.fieldName { display: inline-block; width: 192px; margin-left: 8px; text-align: left; }
+	input[type=checkbox] + .fieldName { width: auto; }
 	input[type=range] {
 		width: calc(100vw - 332px);
 		max-width: 512px;
@@ -177,6 +178,8 @@
 		type="range" min="0" max="255" step="1" value="0"/>
 	</li><li><label><span class="fieldName">Background color: </span><input type="color"
 		id="backgroundColor"/> <span id="bgWithAlpha" class="swatch"></span></label>
+	</li><li class="bitmapSupport"><label><input type="checkbox" id="useGaussScale" checked="checked"/><span class="fieldName">Use Gaussian
+		downscale</span>
 	</li><li class="bitmapSupport"><label><input type="checkbox" id="doNotEnlargePixels" checked="checked"/><span class="fieldName">Do not enlarge
 		bitmaps</span>
 	</li><li><label><input type="radio" name="outputFormat" value="png"/><span class="fieldName">PNG output</span>

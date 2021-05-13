@@ -41,6 +41,52 @@ function getExif(blob) {
 	});
 }
 
+function gaussResize(image, width, height) {
+	console.log(image.width, width);
+	console.log(image.height, height);
+	if (image.width > width || image.height > height) {
+		let size = Math.min(image.width / width, image.height / height) * 0.5;
+		let padding = Math.ceil(size * 2);
+		console.log(padding);
+		let extended = document.createElement("canvas");
+		extended.width = image.width + padding * 2;
+		extended.height = image.height + padding * 2;
+		let ctx = extended.getContext("2d");
+		ctx.drawImage(image, padding, padding);
+		for (let y = 0; y < 3; ++y) {
+			for (let x = 0; x < 3; ++x) {
+				if (x != 1 || y != 1) {
+					let sx = x & 2 ? image.width - 1 : 0;
+					let sw = x & 1 ? image.width : 1;
+					let sy = y & 2 ? image.height - 1 : 0;
+					let sh = y & 1 ? image.height : 1;
+
+					let dx = (x ? padding : 0) + (x & 2 ? image.width : 0);
+					let dw = x & 1 ? image.width : padding;
+					let dy = (y ? padding : 0) + (y & 2 ? image.height : 0);
+					let dh = y & 1 ? image.height : padding;
+
+					ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+				}
+			}
+		}
+
+		let blurred = document.createElement("canvas");
+		blurred.width = image.width;
+		blurred.height = image.height;
+		ctx = blurred.getContext("2d");
+		ctx.filter = "blur("+size+"px)";
+		ctx.drawImage(extended, -padding, -padding);
+		image = blurred;
+	}
+	let result = document.createElement("canvas");
+	result.width = width;
+	result.height = height;
+	let ctx = result.getContext("2d");
+	ctx.drawImage(image, 0, 0, width, height);
+	return Promise.resolve(result);
+}
+
 function exifFlipsOrientation(exif) {
 	var o = exif && typeof exif.Orientation === "number" ? exif.Orientation : 0;
 	return o > 4;
@@ -62,7 +108,7 @@ function saveConfig() {
 }
 
 var controlList = ["yieldRange", "yieldField", "fileSelector", "bgAlphaField", "bgAlphaRange", "backgroundColor", "bgWithAlpha",
-	"jpegQualityField", "jpegQualityRange", "doNotEnlargePixels"];
+	"jpegQualityField", "jpegQualityRange", "doNotEnlargePixels", "useGaussScale"];
 
 document.getElementsByName("outputFormat").item(0).checked = true;
 document.getElementsByName("resize").item(0).checked = true;
@@ -157,20 +203,37 @@ function getResizeValue() {
 	return {
 		rule: rule,
 		value: +controls[rule+"Field"].value,
-		doNotEnlargePixels: (controls.doNotEnlargePixels || {}).checked || false
+		doNotEnlargePixels: (controls.doNotEnlargePixels || {}).checked || false,
+		useGaussScale: (controls.useGaussScale || {}).checked || false
 	};
 }
 
 function bitmapResizeSupported() {
 	var c = document.createElement("canvas");
-	return createImageBitmap(c, { resizeWidth: 1, resizeHeight: 1, resizeQuality: "high" })
-		.then(bitmap => bitmap.width === 1);
+	try {
+		return createImageBitmap(c, { resizeWidth: 1, resizeHeight: 1, resizeQuality: "high" })
+			.then(bitmap => bitmap.width === 1).catch(_ => false);
+	} catch (e) {
+		return Promise.resolve(false);
+	}
 }
 
-bitmapResizeSupported().then(result => {
+let gaussAvailable;
+let resizeAvailable;
+
+const bitmapSupportPromise = bitmapResizeSupported().then(result => {
 	var classes = document.body.classList;
+	resizeAvailable = result;
+	gaussAvailable = "filter" in document.createElement("canvas").getContext("2d");
+	console.log("Resize is available:", resizeAvailable);
+	console.log("Gauss available:", gaussAvailable);
 	classes.remove("bitmapSupportUnknown");
-	classes.add(result ? "bitmapSupport" : "svgOnly");
+	classes.add(resizeAvailable || gaussAvailable ? "bitmapSupport" : "svgOnly");
+	if (!gaussAvailable || !resizeAvailable) {
+		controls.useGaussScale.disabled = true;
+		controls.useGaussScale.checked = gaussAvailable;
+		config.useGaussScale = gaussAvailable;
+	}
 });
 
 document.body.classList.remove("loading");
@@ -320,8 +383,13 @@ function pixelResize(blob, config) {
 		var d = resize({ width, height }, config.resize);
 		var newWidth = Math.round(flip ? d.height : d.width);
 		var newHeight = Math.round(flip ? d.width : d.height);
-		return createImageBitmap(baseBitmap, { resizeWidth: newWidth, resizeHeight: newHeight, resizeQuality: "high" })
-			.then(resizedBitmap => {
+		let resizePromise;
+		if (config.resize.useGaussScale) {
+			resizePromise = gaussResize(baseBitmap, newWidth, newHeight);
+		} else {
+			resizePromise = createImageBitmap(baseBitmap, { resizeWidth: newWidth, resizeHeight: newHeight, resizeQuality: "high" });
+		}
+		return resizePromise.then(resizedBitmap => {
 				var canvas = imageToCanvas(resizedBitmap, config.backgroundColor, exif);
 				if (config.doNotDownload) return canvas;
 				var baseName = "image";
@@ -452,7 +520,7 @@ function svgToCanvas(svgString, bgColor) {
 		image.onload = event => {
 			setTimeout(() => URL.revokeObjectURL(url), 0);
 			try {
-				resolve(imageToCanvas(image));
+				resolve(imageToCanvas(image, bgColor));
 			} catch (e) {
 				reject(e);
 			}
