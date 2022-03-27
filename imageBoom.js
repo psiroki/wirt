@@ -1,6 +1,9 @@
 var DOMURL = window.URL || window.webkitURL || window;
 var exif = null;
 if (!this.createImageBitmap) throw "Legacy browsers are not supported."
+if ("serviceWorker" in navigator) {
+	navigator.serviceWorker.register("/wirt/sw.js");
+}
 try {
 	exif = new Worker("exifWorker.js");
 } catch(e) {
