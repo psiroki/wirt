@@ -1,4 +1,4 @@
-const cacheName = "wirt-v2";
+const cacheName = "wirt-v3";
 const files = [
   "/wirt/",
   "/wirt/?source=pwa",
@@ -16,9 +16,11 @@ const files = [
 
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.open(cacheName)
+      .then(c => c.match(event.request))
+      .then(response => {
+        return response || fetch(event.request);
+      })
   );
 });
 
