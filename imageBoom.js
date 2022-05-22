@@ -404,7 +404,8 @@ function processHtml(html, config) {
 		let node = htmlBody.firstChild;
 		if (config.transparentHtml && node instanceof Element) {
 			let s = node.style;
-			for (let bg of Array.from(s).filter(e => e.toLowerCase().startsWith("background"))) {
+			for (let bg of Array.from(s)
+					.filter(e => e.toLowerCase().startsWith("background"))) {
 				s.removeProperty(bg);
 			}
 		}
@@ -538,7 +539,10 @@ document.body.addEventListener("paste", function(e) {
 			stringPromise.then(s => settings.processSource(s)).catch(e => {
 				if (e instanceof NotAnSvgFile) {
 					if (htmlPromise) {
-						htmlPromise.then(s => settings.processHtml(s));
+						return htmlPromise.then(s => settings.processHtml(s));
+					} else {
+						// try to process the raw text as HTML
+						return settings.processHtml(s);
 					}
 				}
 			});
