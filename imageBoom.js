@@ -384,8 +384,9 @@ function processHtml(html, config) {
 	const measure = frame.contentDocument.body;
 	measure.style.display = "inline-block";
 	measure.innerHTML = htmlBody.innerHTML;
-	const w = measure.offsetWidth+1;
-	const h = measure.offsetHeight+1;
+	const r = measure.getBoundingClientRect();
+	const w = Math.ceil(r.width);
+	const h = Math.ceil(r.height);
 	container.remove();
 
 	// generate svg
