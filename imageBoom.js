@@ -536,16 +536,16 @@ document.body.addEventListener("paste", function(e) {
 		const stringPromise = transferItemString(stringItem);
 		if (stringPromise) {
 			const settings = new BoomSettings();
-			stringPromise.then(s => settings.processSource(s)).catch(e => {
+			stringPromise.then(plain => settings.processSource(plain).catch(e => {
 				if (e instanceof NotAnSvgFile) {
 					if (htmlPromise) {
-						return htmlPromise.then(s => settings.processHtml(s));
+						return htmlPromise.then(html => settings.processHtml(html));
 					} else {
 						// try to process the raw text as HTML
-						return settings.processHtml(s);
+						return settings.processHtml(plain);
 					}
 				}
-			});
+			}));
 		} else if (htmlPromise) {
 			const settings = new BoomSettings();
 			htmlPromise.then(s => settings.processHtml(s));
