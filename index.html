@@ -149,7 +149,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="/wirt/icon-192.png"/>
-<meta name="theme-color" content="#eee"/>
+<meta name="theme-color" content="#fff"/>
 <meta name="description" content="Wirt's Image Resizing Tool. Who's Wirt? It's just a name."/>
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="wirt"/>
@@ -185,6 +185,8 @@
 		downscale</span>
 	</li><li class="bitmapSupport"><label><input type="checkbox" id="doNotEnlargePixels" checked="checked"/><span class="fieldName">Do not enlarge
 		bitmaps</span>
+	</li><li><label><input type="checkbox" id="transparentHtml"/><span class="fieldName">Make root HTML
+		elements transparent</span>
 	</li><li><label><input type="radio" name="outputFormat" value="png"/><span class="fieldName">PNG output</span>
 	</li><li><label><input type="radio" name="outputFormat" value="jpeg"/><span class="fieldName">JPEG output</span><input
 		id="jpegQualityField" type="number" min="1" max="100" step="1" value="85"/>%</label>
@@ -194,7 +196,7 @@
 	</li></ul>
 <input id="fileSelector" type="file" accept="image/*"/><br/>or just drop it, paste the SVG
 	source<span class="bitmapSupport">, it can even be a PNG, JPEG,
-		whatever</span><span class="svgOnly">, only SVG is supported</span></div>
+		whatever</span><span class="svgOnly">, only SVG is supported</span> (rich text is also supported)</div>
 <div class="dropShade"></div>
 <script type="application/javascript" defer="defer" src="drop.js"></script>
 <script type="application/javascript" defer="defer" src="crc32.js"></script>

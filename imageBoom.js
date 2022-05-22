@@ -111,7 +111,7 @@ function saveConfig() {
 }
 
 var controlList = ["yieldRange", "yieldField", "fileSelector", "bgAlphaField", "bgAlphaRange", "backgroundColor", "bgWithAlpha",
-	"jpegQualityField", "jpegQualityRange", "doNotEnlargePixels", "useGaussScale"];
+	"jpegQualityField", "jpegQualityRange", "doNotEnlargePixels", "useGaussScale", "transparentHtml"];
 
 document.getElementsByName("outputFormat").item(0).checked = true;
 document.getElementsByName("resize").item(0).checked = true;
@@ -273,7 +273,8 @@ function BoomSettings({alphaOverride, preparedConfig} = {}) {
 			resize: getResizeValue(),
 			backgroundColor: controls.backgroundColor.value + "00".substring(alpha.length) + alpha,
 			doNotDownload: format === "canvas",
-			outputFormat: formatObject
+			outputFormat: formatObject,
+			transparentHtml: controls.transparentHtml.checked
 		};
 	}
 }
@@ -290,8 +291,11 @@ BoomSettings.prototype = {
 		}
 		return canvas;
 	},
-	processSource(text) {
+	async processSource(text) {
 		return this._handleCanvas(processSource(text, this.config));
+	},
+	async processHtml(html) {
+		return this._handleCanvas(processHtml(html, this.config));
 	},
 	async processBlob(blob) {
 		if (!this.config.sourceName && blob.name) {
@@ -339,6 +343,75 @@ function resize(dims, config) {
 		dims[key] *= scale;
 	}
 	return dims;
+}
+
+function removeScripts(node) {
+	if (!(node instanceof Element)) return;
+	if (node.tagName.toLowerCase() === "script") {
+		node.remove();
+		return;
+	}
+	for (let e of node.getAttributeNames().filter(e => e.toLowerCase().startsWith("on"))) {
+		node.removeAttribute(e);
+	}
+	for (let c of Array.from(node.children)) {
+		removeScripts(c);
+	}
+}
+
+function processHtml(html, config) {
+	// measure
+	let frame = document.createElement("iframe");
+	frame.style.border = "none";
+	frame.style.width = "1280px";
+	frame.style.height = "1280px";
+	let container = document.createElement("div");
+	container.style.width = container.style.height = "0";
+	container.style.overflow = "hidden";
+	container.style.opacity = 0;
+	container.style.pointerEvents = "none";
+	container.append(frame);
+	document.body.append(container);
+	const parser = new DOMParser();
+	let htmlDoc = parser.parseFromString(html, "text/html");
+	removeScripts(htmlDoc.documentElement);
+	let style = htmlDoc.createElement("style");
+	style.textContent =
+		"pre,html,body{margin:0;padding:0}"+
+		"html{overflow:auto}body{overflow:hidden}";
+	const htmlBody = htmlDoc.body;
+	frame.contentDocument.head.append(style.cloneNode(true));
+	const measure = frame.contentDocument.body;
+	measure.style.display = "inline-block";
+	measure.innerHTML = htmlBody.innerHTML;
+	const w = measure.offsetWidth+1;
+	const h = measure.offsetHeight+1;
+	container.remove();
+
+	// generate svg
+	let svgDoc = parser.parseFromString(
+		"<svg xmlns=\"http://www.w3.org/2000/svg\"><foreignObject width=\"100%\" " +
+		"height=\"100%\"><div xmlns=\"http://www.w3.org/1999/xhtml\"></div></fore" +
+		"ignObject></svg>", "image/svg+xml");
+	let svg = svgDoc.documentElement;
+	svg.setAttribute("width", w);
+	svg.setAttribute("height", h);
+	svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+	svg.querySelector("foreignObject").append(style);
+	let svgDiv = svg.querySelector("div");
+	while (htmlBody.firstChild) {
+		let node = htmlBody.firstChild;
+		if (config.transparentHtml && node instanceof Element) {
+			let s = node.style;
+			for (let bg of Array.from(s).filter(e => e.toLowerCase().startsWith("background"))) {
+				s.removeProperty(bg);
+			}
+		}
+		svgDiv.append(node);
+	}
+	const svgSource = new XMLSerializer().serializeToString(svg);
+	container.append(svg);
+	return processSource(svgSource, config);
 }
 
 function processSource(text, config) {
@@ -409,39 +482,68 @@ function pixelResize(blob, config) {
 
 dropHandler(document.body, blob => new BoomSettings().processBlob(blob), () => {});
 controls.fileSelector.addEventListener("input", function(e) {
-	new BoomSettings().processBlob(e.target.files[0]);
+	let files = Array.from(e.target.files);
+	e.target.value = "";
+	new BoomSettings().processBlob(files[0]);	
 });
 
 
-var pasteTargets = new Set(["text", "number"]);
+const pasteTargets = new Set(["text", "number"]);
+
+function transferItemString(item) {
+	return item && new Promise((resolve, reject) => {
+		try {
+			item.getAsString(s => resolve(s));
+		} catch (e) {
+			reject(e);
+		}
+	});
+}
 
 document.body.addEventListener("paste", function(e) {
 	if ((e.target.tagName || "").toLowerCase() === "input" && pasteTargets.has(e.target.type.toLowerCase())) return;
-	var items = (e.clipboardData || {}).items;
+	const items = (e.clipboardData || {}).items;
 	if (items) {
-		var stringItem;
-		for (var item of items) {
+		let stringItem;
+		let htmlItem;
+		for (let item of items) {
 			if (item.kind === "file") {
 				// file support is broken
 				console.log("File found: "+item.type, item);
-				var m = /^image\/(svg)?/i.exec(item.type);
+				const m = /^image\/(svg)?/i.exec(item.type);
 				if (m && !m[1]) {
-					var f = item.getAsFile();
+					const f = item.getAsFile();
 					if (f) {
 						new BoomSettings().processBlob(f);
 						stringItem = null;
+						htmlItem = null;
 						break;
 					} else {
 						console.log("No file object though");
 					}
 				}
-			} else if (item.kind === "string" && item.type === "text/plain") {
-				stringItem = item;
+			} else if (item.kind === "string") {
+				if (item.type === "text/plain") {
+					stringItem = item;
+				} else if (item.type === "text/html") {
+					htmlItem = item;
+				}
 			}
 		}
-		if (stringItem) {
-			var settings = new BoomSettings();
-			item.getAsString(settings.processSource.bind(settings));
+		const htmlPromise = transferItemString(htmlItem);
+		const stringPromise = transferItemString(stringItem);
+		if (stringPromise) {
+			const settings = new BoomSettings();
+			stringPromise.then(s => settings.processSource(s)).catch(e => {
+				if (e instanceof NotAnSvgFile) {
+					if (htmlPromise) {
+						htmlPromise.then(s => settings.processHtml(s));
+					}
+				}
+			});
+		} else if (htmlPromise) {
+			const settings = new BoomSettings();
+			htmlPromise.then(s => settings.processHtml(s));
 		}
 	}
 });
@@ -547,7 +649,7 @@ function nameAndDownloadCanvas(baseName, canvas, format) {
 function svgToFile(sourceName, svgString, bgColor, format) {
 	if (typeof format === "undefined")
 		format = null;
-	var promise = svgToCanvas(svgString, bgColor);
+	let promise = svgToCanvas(svgString, bgColor);
 	if (format) {
 		return promise.then(canvas => {
 			if (!sourceName) {
