@@ -1,4 +1,4 @@
-const cacheName = "wirt-v3";
+const cacheName = "wirt-v4";
 const files = [
   "/wirt/",
   "/wirt/?source=pwa",
