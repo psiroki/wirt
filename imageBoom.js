@@ -306,8 +306,12 @@ BoomSettings.prototype = {
 		} else if (this.config.sourceName) {
 			console.log(`Blob type: ${blob.type}, source name is ${this.config.sourceName}`);
 		}
+		const source = await readBlobAsText(blob);
 		try {
-			return await this.processSource(await readBlobAsText(blob));
+			if (blob.type === "text/html") {
+				return await this.processHtml(source);
+			}
+			return await this.processSource(source);
 		} catch (e) {
 			if (e instanceof NotAnSvgFile) {
 				return this._handleCanvas(pixelResize(blob, this.config));
@@ -486,7 +490,9 @@ dropHandler(document.body, blob => new BoomSettings().processBlob(blob), () => {
 controls.fileSelector.addEventListener("input", function(e) {
 	let files = Array.from(e.target.files);
 	e.target.value = "";
-	new BoomSettings().processBlob(files[0]);	
+	for (let file of files) {
+		new BoomSettings().processBlob(file);	
+	}
 });
 
 
