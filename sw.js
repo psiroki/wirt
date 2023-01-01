@@ -1,4 +1,4 @@
-const cacheName = "wirt-v1.7";
+const cacheName = "wirt-v1.8";
 const files = [
   "/wirt/",
   "/wirt/?source=pwa",
@@ -30,4 +30,12 @@ self.addEventListener("install", event => {
       return cache.addAll(files);
     })
   );
+});
+
+self.addEventListener("message", event => {
+  const msg = event.data;
+  if (msg["action"] === "hi") {
+    const dash = cacheName.indexOf("-");
+    event.source.postMessage({"action": "greetings", "version": cacheName.substring(dash + 1)});
+  }
 });

@@ -1,8 +1,10 @@
 var DOMURL = window.URL || window.webkitURL || window;
 var exif = null;
-if (!this.createImageBitmap) throw "Legacy browsers are not supported."
+if (!this.createImageBitmap) throw "Legacy browsers are not supported.";
+let swUsed = false;
 if ("serviceWorker" in navigator) {
 	navigator.serviceWorker.register("/wirt/sw.js");
+	swUsed = true;
 }
 try {
 	exif = new Worker("exifWorker.js");
@@ -706,4 +708,15 @@ async function downloadCanvas(downloadName, canvas, contentType, encoderOptions,
 	a.download = downloadName;
 	a.click();
 	DOMURL.revokeObjectURL(blobUrl);
+}
+
+if (swUsed) {
+	navigator.serviceWorker.addEventListener("message", event => {
+		const msg = event.data;
+		if ("version" in msg) {
+			const ver = document.querySelector("#ver");
+			ver.textContent = msg["version"];
+		}
+	});
+	navigator.serviceWorker.ready.then(reg => reg.active.postMessage({"action": "hi"}));
 }
