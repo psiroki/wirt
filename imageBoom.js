@@ -630,11 +630,18 @@ function imageToCanvas(image, bgColor, exif) {
 	return canvas;
 }
 
+const blobsAreTainted = true;
+
 function svgToCanvas(svgString, bgColor) {
 	return new Promise((resolve, reject) => {
 		var image = new Image();
-		var blob = new Blob([svgString], { type: "image/svg+xml" });
-		var url = URL.createObjectURL(blob);
+		var url;
+		if (blobsAreTainted) {
+			url = "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svgString);
+		} else {
+			var blob = new Blob([svgString], { type: "image/svg+xml" });
+			url = URL.createObjectURL(blob);
+		}
 		image.onload = event => {
 			setTimeout(() => URL.revokeObjectURL(url), 0);
 			try {
