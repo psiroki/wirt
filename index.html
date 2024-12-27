@@ -187,7 +187,7 @@
 		type="range" min="0" max="255" step="1" value="0"/>
 	</li><li><label><span class="fieldName">Background color: </span><input type="color"
 		id="backgroundColor"/> <span id="bgWithAlpha" class="swatch"></span></label>
-	</li><li class="bitmapSupport"><label><input type="checkbox" id="useGaussScale" checked="checked"/><span class="fieldName">Use Gaussian
+	</li><li class="bitmapSupport" style="display: none"><label><input type="checkbox" id="useGaussScale" checked="checked"/><span class="fieldName">Use Gaussian
 		downscale</span>
 	</li><li class="bitmapSupport"><label><input type="checkbox" id="doNotEnlargePixels" checked="checked"/><span class="fieldName">Do not enlarge
 		bitmaps</span>
@@ -204,6 +204,7 @@
 	source<span class="bitmapSupport">, it can even be a PNG, JPEG,
 		whatever</span><span class="svgOnly">, only SVG is supported</span> (rich text is also supported)</div>
 <div class="dropShade"></div>
+<script type="application/javascript" defer="defer" src="pica.min.js"></script>
 <script type="application/javascript" defer="defer" src="drop.js"></script>
 <script type="application/javascript" defer="defer" src="crc32.js"></script>
 <script type="application/javascript" defer="defer" src="imageBoom.js"></script>
