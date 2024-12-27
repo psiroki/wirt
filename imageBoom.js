@@ -1,4 +1,5 @@
-var DOMURL = window.URL || window.webkitURL || window;
+const DOMURL = window.URL || window.webkitURL || window;
+const picaApi = pica();
 var exif = null;
 if (!this.createImageBitmap) throw "Legacy browsers are not supported.";
 let swUsed = false;
@@ -44,6 +45,14 @@ function getExif(blob) {
 		var port = channel.port2;
 		exif.postMessage({ port, blob }, [port]);
 	});
+}
+
+function createCanvas(width, height, canBeOffscreen = false) {
+	if (canBeOffscreen && self.OffscreenCanvas) return new OffscreenCanvas(width, height);
+	let canvas =  document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	return canvas;
 }
 
 function gaussResize(image, width, height) {
@@ -471,7 +480,8 @@ function pixelResize(blob, config) {
 		if (config.resize.useGaussScale) {
 			resizePromise = gaussResize(baseBitmap, newWidth, newHeight);
 		} else {
-			resizePromise = createImageBitmap(baseBitmap, { resizeWidth: newWidth, resizeHeight: newHeight, resizeQuality: "high" });
+			resizePromise = picaApi.resize(baseBitmap, createCanvas(newWidth, newHeight, true))
+					.then(canvas => createImageBitmap(canvas));
 		}
 		return resizePromise.then(resizedBitmap => {
 				var canvas = imageToCanvas(resizedBitmap, config.backgroundColor, exif);

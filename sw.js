@@ -1,7 +1,8 @@
-const cacheName = "wirt-v1.10";
+const cacheName = "wirt-v1.11";
 const files = [
   "/wirt/",
   "/wirt/?source=pwa",
+  "/wirt/pica.min.js",
   "/wirt/crc32.js",
   "/wirt/drop.js",
   "/wirt/exif.js",
