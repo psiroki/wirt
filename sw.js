@@ -1,4 +1,4 @@
-const cacheName = "wirt-v1.11";
+const cacheName = "wirt-v1.12";
 const files = [
   "/wirt/",
   "/wirt/?source=pwa",
@@ -13,6 +13,8 @@ const files = [
   "/wirt/manifest.json",
   "/wirt/icon-192.png",
   "/wirt/icon-512.png",
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 ];
 
 self.addEventListener("fetch", event => {

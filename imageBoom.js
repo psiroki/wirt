@@ -1,5 +1,8 @@
 const DOMURL = window.URL || window.webkitURL || window;
 const picaApi = pica();
+const pdfjsLib = window['pdfjs-dist/build/pdf'];
+pdfjsLib.GlobalWorkerOptions.workerSrc = 
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 var exif = null;
 if (!this.createImageBitmap) throw "Legacy browsers are not supported.";
 let swUsed = false;
@@ -295,6 +298,9 @@ BoomSettings.prototype = {
 		if (canvas instanceof Promise) {
 			return canvas.then(this._handleCanvas.bind(this));
 		}
+		if (Array.isArray(canvas)) {
+			canvas = canvas[0];
+		}
 		if (this.config.doNotDownload) {
 			canvas.classList.add("preview");
 			canvas.addEventListener("click", _ => { canvas.remove(); });
@@ -316,6 +322,14 @@ BoomSettings.prototype = {
 			return new BoomSettings({preparedConfig}).processBlob(blob);
 		} else if (this.config.sourceName) {
 			console.log(`Blob type: ${blob.type}, source name is ${this.config.sourceName}`);
+		}
+		if (blob.type === "application/pdf") {
+			let bytes = await readBlobAsBytes(blob);
+			try {
+				return this._handleCanvas(pdfToCanvases(bytes, 1, this.config));
+			} catch (e) {
+				console.error(e);
+			}
 		}
 		const source = await readBlobAsText(blob);
 		try {
@@ -668,6 +682,58 @@ function svgToCanvas(svgString, bgColor) {
 		image.src = url;
 	});
 }
+
+async function pdfToCanvases(pdfBytes, pageNumber, config) {
+  // Load PDF from bytes
+  const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+  
+  // Determine which pages to render
+  const pageNumbers = pageNumber !== null 
+    ? [pageNumber] 
+    : Array.from({ length: pdf.numPages }, (_, i) => i + 1);
+  
+  const canvases = [];
+  
+  for (const pageNum of pageNumbers) {
+    const page = await pdf.getPage(pageNum);
+    
+    // Get original dimensions at scale 1
+    const baseViewport = page.getViewport({ scale: 1 });
+    const originalWidth = baseViewport.width;
+    const originalHeight = baseViewport.height;
+    
+    // Calculate desired dimensions using your resize logic
+    let resizeRule = config.resize;
+    if (resizeRule.doNotEnlargePixels) {
+      resizeRule = jsonClone(resizeRule);
+      resizeRule.doNotEnlargePixels = false;
+    }
+    const { width } = resize({ width: originalWidth, height: originalHeight }, resizeRule);
+    
+    // Calculate scale factor
+    const scale = width / originalWidth;
+    
+    // Get viewport with calculated scale
+    const viewport = page.getViewport({ scale });
+    
+    // Create and configure canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const context = canvas.getContext('2d');
+    
+    // Render page to canvas
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise;
+    
+    canvases.push(canvas);
+  }
+  
+  return canvases;
+}
+
 
 function nameAndDownloadCanvas(baseName, canvas, format) {
 	var ext = format.type;
